@@ -6,32 +6,39 @@ class SimFrame(wx.Frame):
     """
     A Frame that holds the road and the cars
     """
-    fx=0
-    fy=0
-    GREEN = bytearray([0,200,0])
-    RED = bytearray([200,0,0])
-    BLACK = bytearray([0,0,0])
-    CELLSIZE = 100*100
-    ROADROWS = 5
-    ROADCOLS = 10
-    roadcells = []
 
     def __init__(self, *args, **kw):
         # ensure the parent's __init__ is called
         super(SimFrame, self).__init__(*args, **kw)
 
+        CELLW=100
+        CELLH=100
+        CELLSIZE = CELLW * CELLH
+        self.fx=0
+        self.fy=0
+        self.GREEN = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,200,0]*CELLSIZE))
+        self.RED = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([200,0,0]*CELLSIZE))
+        self.BLACK = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,0,0]*CELLSIZE))
+        self.ROADROWS = 5
+        self.ROADCOLS = 10
+        self.roadcells = []
+        self.tickTime = 300
+
         self.makeMenuBar()
         self.CreateStatusBar()
         self.Centre()
-        self.content = wx.Bitmap(100,100)
-        self.content.CopyFromBuffer(self.BLACK*self.CELLSIZE)
-        self.gridsizer = wx.GridSizer(rows=self.ROADROWS, cols=self.ROADCOLS, gap=wx.Size(1,1))
+        self.gridsizer = wx.GridSizer(rows=self.ROADROWS, cols=self.ROADCOLS, gap=wx.Size(0,0))
         for shard in range(0,self.ROADROWS * self.ROADCOLS):
-            self.roadcells.append(wx.StaticBitmap(self, bitmap=self.content))
+            self.roadcells.append(wx.StaticBitmap(self, bitmap=self.BLACK))
             self.gridsizer.Add(self.roadcells[-1])
         self.SetSizer(self.gridsizer)
-
+        self.timer = wx.Timer(self)
+        self.timer.Start(self.tickTime)
         self.mailbox = wx.StaticText(self)
+        self.Bind(wx.EVT_TIMER, self.OnTick)
+
+    def OnTick(self, e):
+        self.timer.Start(self.tickTime)
 
     def makeMenuBar(self):
         """
@@ -70,6 +77,12 @@ class SimFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit,  exitItem)
         self.Bind(wx.EVT_MENU, self.OnAbout, aboutItem)
 
+    def setCell(self, content):
+        cells = len(self.roadcells)
+        for idx in range(cells-1):
+            self.roadcells[-(idx+1)].SetBitmap(self.roadcells[-(idx+2)].GetBitmap())
+        self.roadcells[0].SetBitmap(content)
+
     def setCells(self, content):
         for roadcell in self.roadcells:
             roadcell.SetBitmap(content)
@@ -77,20 +90,17 @@ class SimFrame(wx.Frame):
     def OnGo(self, event):
         """Make the cars go."""
         self.mailbox.SetLabel("going")
-        self.content.CopyFromBuffer(self.GREEN*self.CELLSIZE)
-        self.setCells(self.content)
+        self.setCell(self.GREEN)
 
     def OnPause(self, event):
         """Make the cars stop."""
         self.mailbox.SetLabel("pausing")
-        self.content.CopyFromBuffer(self.RED*self.CELLSIZE)
-        self.setCells(self.content)
+        self.setCell(self.RED)
 
     def OnNew(self, event):
         """Clear the current scenario."""
         self.mailbox.SetLabel("cleaning")
-        self.content.CopyFromBuffer(self.BLACK*self.CELLSIZE)
-        self.setCells(self.content)
+        self.setCell(self.BLACK)
 
     def OnLoad(self, event):
         """Load a saved scenario."""
@@ -103,7 +113,6 @@ class SimFrame(wx.Frame):
     def OnExit(self, event):
         """Close the frame, terminating the application."""
         self.Close(True)
-
 
     def OnSize(self, event=None):
         self.fx,self.fy=self.GetSize().Get()
