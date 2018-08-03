@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import wx
+import road
 
 class SimFrame(wx.Frame):
     """
@@ -19,6 +20,21 @@ class SimFrame(wx.Frame):
         self.GREEN = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,200,0]*CELLSIZE))
         self.RED = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([200,0,0]*CELLSIZE))
         self.BLACK = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,0,0]*CELLSIZE))
+        self.DEADN = road.Road(exits=1.1,controls=[0])
+        self.DEADE = road.Road(exits=1.2,controls=[0])
+        self.DEADS = road.Road(exits=1.3,controls=[0])
+        self.DEADW = road.Road(exits=1.4,controls=[0])
+        self.STR8NS = road.Road(exits=2.1,controls=[0,0])
+        self.STR8EW = road.Road(exits=2.2,controls=[0,0])
+        self.ELBNE = road.Road(exits=2.3,controls=[0,0])
+        self.ELBES = road.Road(exits=2.4,controls=[0,0])
+        self.ELBSW = road.Road(exits=2.5,controls=[0,0])
+        self.ELBWN = road.Road(exits=2.6,controls=[0,0])
+        self.NSTE = road.Road(exits=3.1,controls=[0,0,0])
+        self.NSTW = road.Road(exits=3.2,controls=[0,0,0])
+        self.EWTN = road.Road(exits=3.3,controls=[0,0,0])
+        self.EWTS = road.Road(exits=3.4,controls=[0,0,0])
+        self.FOUR = road.Road(exits=4.0,controls=[0,0,0,0])
         self.ROADROWS = 5
         self.ROADCOLS = 10
         self.roadcells = []
@@ -95,7 +111,8 @@ class SimFrame(wx.Frame):
     def OnPause(self, event):
         """Make the cars stop."""
         self.mailbox.SetLabel("pausing")
-        self.setCell(self.RED)
+        #self.setCell(self.RED)
+        self.setCell(self.DEADE)
 
     def OnNew(self, event):
         """Clear the current scenario."""
