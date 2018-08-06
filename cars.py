@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import wx
+import random
 import road
 
 class SimFrame(wx.Frame):
@@ -15,42 +16,73 @@ class SimFrame(wx.Frame):
         CELLW=100
         CELLH=100
         CELLSIZE = CELLW * CELLH
+        self.savename='savefile.car'
         self.fx=0
         self.fy=0
         self.GREEN = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,200,0]*CELLSIZE))
         self.RED = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([200,0,0]*CELLSIZE))
         self.BLACK = wx.Bitmap(CELLW,CELLH).FromBuffer(CELLW,CELLH,bytearray([0,0,0]*CELLSIZE))
-        self.DEADN = road.Road(exits=1.1,controls=[0])
-        self.DEADE = road.Road(exits=1.2,controls=[0])
-        self.DEADS = road.Road(exits=1.3,controls=[0])
-        self.DEADW = road.Road(exits=1.4,controls=[0])
-        self.STR8NS = road.Road(exits=2.1,controls=[0,0])
-        self.STR8EW = road.Road(exits=2.2,controls=[0,0])
-        self.ELBNE = road.Road(exits=2.3,controls=[0,0])
-        self.ELBES = road.Road(exits=2.4,controls=[0,0])
-        self.ELBSW = road.Road(exits=2.5,controls=[0,0])
-        self.ELBWN = road.Road(exits=2.6,controls=[0,0])
-        self.NSTE = road.Road(exits=3.1,controls=[0,0,0])
-        self.NSTW = road.Road(exits=3.2,controls=[0,0,0])
-        self.EWTN = road.Road(exits=3.3,controls=[0,0,0])
-        self.EWTS = road.Road(exits=3.4,controls=[0,0,0])
-        self.FOUR = road.Road(exits=4.0,controls=[0,0,0,0])
+        #self.PIECEMAP='123456789ABCDEF'
+        self.PIECEMAP='WDXARFECZQYTHGVS'
+        self.TILEARRAY=[
+        road.Road(exits=1.1,controls=[0]),
+        road.Road(exits=1.2,controls=[0]),
+        road.Road(exits=1.3,controls=[0]),
+        road.Road(exits=1.4,controls=[0]),
+        road.Road(exits=2.1,controls=[0,0]),
+        road.Road(exits=2.2,controls=[0,0]),
+        road.Road(exits=2.3,controls=[0,0]),
+        road.Road(exits=2.4,controls=[0,0]),
+        road.Road(exits=2.5,controls=[0,0]),
+        road.Road(exits=2.6,controls=[0,0]),
+        road.Road(exits=3.1,controls=[0,0,0]),
+        road.Road(exits=3.2,controls=[0,0,0]),
+        road.Road(exits=3.3,controls=[0,0,0]),
+        road.Road(exits=3.4,controls=[0,0,0]),
+        road.Road(exits=4.0,controls=[0,0,0,0]),
+        self.BLACK
+        ]
+        self.DEADN = 0
+        self.DEADE = 1
+        self.DEADS = 2
+        self.DEADW = 3
+        self.STR8NS = 4
+        self.STR8EW = 5
+        self.ELBNE = 6
+        self.ELBES = 7
+        self.ELBSW = 8
+        self.ELBWN = 9
+        self.NSTE = 10
+        self.NSTW = 11
+        self.EWTN = 12
+        self.EWTS = 13
+        self.FOUR = 14
+        self.EMPTY = 15
+
         self.ROADROWS = 5
         self.ROADCOLS = 10
         self.roadcells = []
+        self.roadtiles = []
         self.tickTime = 300
 
+        self.statusbar = self.CreateStatusBar()
+        self.statusbar.SetStatusText('welcome')
+        self.statusbar.SetMinHeight(100)
+
         self.makeMenuBar()
-        self.CreateStatusBar()
         self.Centre()
+        panel = wx.Panel(self, wx.ID_ANY)
+        panel.Bind(wx.EVT_KEY_DOWN,self.OnKeyDown)
+        panel.SetFocus()
+
         self.gridsizer = wx.GridSizer(rows=self.ROADROWS, cols=self.ROADCOLS, gap=wx.Size(0,0))
-        for shard in range(0,self.ROADROWS * self.ROADCOLS):
+        for shard in range(0,self.ROADROWS * self.ROADCOLS ):
             self.roadcells.append(wx.StaticBitmap(self, bitmap=self.BLACK))
+            self.roadtiles.append('S')
             self.gridsizer.Add(self.roadcells[-1])
         self.SetSizer(self.gridsizer)
         self.timer = wx.Timer(self)
         self.timer.Start(self.tickTime)
-        self.mailbox = wx.StaticText(self)
         self.Bind(wx.EVT_TIMER, self.OnTick)
 
     def OnTick(self, e):
@@ -94,38 +126,59 @@ class SimFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnAbout, aboutItem)
 
     def setCell(self, content):
+        """
+        content: the letter of the Road type
+        """
         cells = len(self.roadcells)
         for idx in range(cells-1):
             self.roadcells[-(idx+1)].SetBitmap(self.roadcells[-(idx+2)].GetBitmap())
-        self.roadcells[0].SetBitmap(content)
+            self.roadtiles[-(idx+1)]=self.roadtiles[-(idx+2)]
+        self.roadcells[0].SetBitmap(self.TILEARRAY[self.PIECEMAP.find(content)])
+        self.roadtiles[0]=content
 
     def setCells(self, content):
         for roadcell in self.roadcells:
-            roadcell.SetBitmap(content)
+            roadcell.setCell(content)
+
+    def OnKeyDown(self, event):
+        keycode = event.GetKeyCode()
+        print keycode
+        if  keycode in range(256) and chr(keycode) in self.PIECEMAP:
+            self.setCell(chr(keycode))
+            self.Refresh()
+            return True
+        event.Skip()
 
     def OnGo(self, event):
         """Make the cars go."""
-        self.mailbox.SetLabel("going")
-        self.setCell(self.GREEN)
+        self.statusbar.SetStatusText('going')
 
     def OnPause(self, event):
         """Make the cars stop."""
-        self.mailbox.SetLabel("pausing")
-        #self.setCell(self.RED)
-        self.setCell(self.DEADE)
+        self.statusbar.SetStatusText('pausing')
 
     def OnNew(self, event):
         """Clear the current scenario."""
-        self.mailbox.SetLabel("cleaning")
-        self.setCell(self.BLACK)
+        self.statusbar.SetStatusText('cleaning')
+        self.setCells('S')
 
     def OnLoad(self, event):
         """Load a saved scenario."""
-        self.mailbox.SetLabel("loading")
+        self.statusbar.SetStatusText('loading')
+        fp = open(self.savename,'r')
+        tilelist = fp.read()
+        fp.close()
+        for tile in tilelist[::-1]:
+            self.setCell(tile)
+        self.Refresh()
 
     def OnSave(self, event):
         """Save the current scenario."""
-        self.mailbox.SetLabel("saving")
+        self.statusbar.SetStatusText('saving')
+        tilelist = str().join(self.roadtiles)
+        fp = open(self.savename,'w')
+        fp.write(tilelist)
+        fp.close()
 
     def OnExit(self, event):
         """Close the frame, terminating the application."""
@@ -133,6 +186,7 @@ class SimFrame(wx.Frame):
 
     def OnSize(self, event=None):
         self.fx,self.fy=self.GetSize().Get()
+        print self.fx, self.fy
         shardsize = self.fx / 10
         shard = 0
         for roadcell in self.roadcells:
@@ -174,6 +228,6 @@ if __name__ == '__main__':
     # When this module is run (not imported) then create the app, the
     # frame, show it, and start the event loop.
     app = wx.App()
-    frm = SimFrame(None, size=wx.Size(1000,500), title='Cars')
+    frm = SimFrame(None, size=wx.Size(1000,525), title='Cars')
     frm.Show()
     app.MainLoop()

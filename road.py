@@ -45,41 +45,50 @@ class Road(wx.Bitmap):
         self.exits = kw.get('exits')
         if self.exits == None:
             self.exits = 2.1 # straight n/s road
-        if self.exits not in [
-                1.1, # dead end open to north
-                1.2, # dead end open to east
-                1.3, # dead end open to south
-                1.4, # dead end open to west
-                2.1, # straight n/s road 
-                2.2, # straight e/w road
-                2.3, # n -> e elbow
-                2.4, # e -> s elbow
-                2.5, # s -> w elbow
-                2.6, # w -> n elbow
-                3.1, # n/s tee east
-                3.2, # n/s tee west
-                3.3, # e/w tee north
-                3.4, # e/w tee south
-                4.0  # 4 way
-                ]:
+        if self.exits not in self.exitmap.keys():
+#        [
+#                1.1, # dead end open to north
+#                1.2, # dead end open to east
+#                1.3, # dead end open to south
+#                1.4, # dead end open to west
+#                2.1, # straight n/s road 
+#                2.2, # straight e/w road
+#                2.3, # n -> e elbow
+#                2.4, # e -> s elbow
+#                2.5, # s -> w elbow
+#                2.6, # w -> n elbow
+#                3.1, # n/s tee east
+#                3.2, # n/s tee west
+#                3.3, # e/w tee north
+#                3.4, # e/w tee south
+#                4.0  # 4 way
+#                ]:
             raise Exception('BAD_EXITS', self.exits)
 
         self.controls = kw.get('controls')
         if self.controls == None:
-            self.controls = [0, 0] # no controls on either exit
+            self.controls = [0]*int(self.exits) # no controls on any exit
         if len(self.controls) != int(self.exits):
             raise Exception('BAD_CONTROL_COUNT', self.exits, self.controls)
 
-        self.LoadFile(self.getRoadPictureName())
+        self.LoadFile(self.getRoadPictureName(),type=wx.BITMAP_TYPE_JPEG)
+        self.SetSize(wx.Size(100,100))
 
     def getLanes(self):
         return self.lanes
 
-    def getDirection(self):
-        return self.direction
-
     def getExits(self):
         return self.exits
+
+    def getControls(self):
+        return self.controls
+
+    def getAll(self):
+        return {
+            'lanes': self.getLanes(),
+            'exits': self.getExits(),
+            'controls': self.getControls()
+            }
 
     def getRoadPictureName(self):
         return self.exitmap[self.exits]
